@@ -7,29 +7,39 @@ import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.apache.shiro.web.session.mgt.ServletContainerSessionManager;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
+import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 
-import java.util.LinkedHashMap;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import java.util.EnumSet;
 import java.util.Map;
 
 @Configuration
 public class ShiroConfig {
-    private static Map<String, String> filterChainDefinitionMap = new LinkedHashMap<String, String>();
 
     @Bean(name = "shiroFilter")
+    public FilterRegistrationBean shiroFilter() throws Exception {
+        FilterRegistrationBean registration = new FilterRegistrationBean();
+        registration.setFilter((Filter) getShiroFilterFactoryBean().getObject());
+        registration.setDispatcherTypes(EnumSet.allOf(DispatcherType.class));
+        return registration;
+    }
+
+    @Bean
     public ShiroFilterFactoryBean getShiroFilterFactoryBean() {
         ShiroFilterFactoryBean shiroFilterFactoryBean = new ShiroFilterFactoryBean();
         shiroFilterFactoryBean.setSecurityManager(securityManager());
         shiroFilterFactoryBean.setLoginUrl("/views/login.html");
         shiroFilterFactoryBean.setSuccessUrl("/views/index.html");
 
+        Map<String, String> filterChainDefinitionMap = shiroFilterFactoryBean.getFilterChainDefinitionMap();
         filterChainDefinitionMap.put("/api/security/**", "anon");
         filterChainDefinitionMap.put("/api/", "anon");
         filterChainDefinitionMap.put("/views/**", "authc");
 
-        shiroFilterFactoryBean.setFilterChainDefinitionMap(filterChainDefinitionMap);
         return shiroFilterFactoryBean;
     }
 
@@ -41,7 +51,7 @@ public class ShiroConfig {
         return dwsm;
     }
 
-    @Bean(name = "ShiroDBRealm")
+    @Bean(name = "shiroDBRealm")
     @DependsOn("lifecycleBeanPostProcessor")
     public ShiroDBRealm getShiroDBRealm() {
         return new ShiroDBRealm();
